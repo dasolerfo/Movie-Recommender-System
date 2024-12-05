@@ -2,16 +2,25 @@ from tokenize import String
 
 import torch
 import pandas as pd
+from pandas import DataFrame
 
 class Movie:
     id: int
     name: String
     topics: list
 
-def readRankings():
-    dataset = pd.read_csv("rankings.csv")
-    print(dataset.head())
+def readRankings() -> DataFrame:
+    dataset = pd.read_csv("datasets/ml-latest-small/ratings.csv")
+    print(dataset["userId"].max())
+    pivotRating = dataset.pivot_table(index='userId', columns='movieId', values='rating', fill_value=0)
+    print(pivotRating.head())
+    return pivotRating
 
-def readMovies():
-    dataset = pd.read_csv("movies.csv")
-    print(dataset.head())
+def readMovies() -> DataFrame:
+    dataset = pd.read_csv("datasets/ml-latest-small/movies.csv")
+    return dataset
+    
+def returnMatrixOfUsersMovies() -> object:
+    return 0
+
+readRankings()
