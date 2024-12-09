@@ -10,7 +10,8 @@ class Movie:
     topics: list
 
 def readRankings() -> DataFrame:
-    dataset = pd.read_csv("datasets/ml-latest-small/ratings.csv")
+    dataset  = pd.read_csv("datasets/ml-latest-small/ratings.csv")
+    dataset  = dataset.sort_values("timestamp", ascending=True, inplace=True)
     print(dataset["userId"].max())
     pivotRating = dataset.pivot_table(index='userId', columns='movieId', values='rating', fill_value=0)
     print(pivotRating.head())
@@ -19,8 +20,6 @@ def readRankings() -> DataFrame:
 def readMovies() -> DataFrame:
     dataset = pd.read_csv("datasets/ml-latest-small/movies.csv")
     return dataset
-    
-def returnMatrixOfUsersMovies() -> object:
-    return 0
+
 
 readRankings()
