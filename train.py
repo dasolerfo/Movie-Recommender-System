@@ -1,5 +1,6 @@
 import dataset as ds
 import numpy as np
+import pandas as pd
 import random
 
 # 1. Configuració de dimensions
@@ -12,6 +13,16 @@ output_dim = 1
 num_epochs = 500
 learning_rate = 0.01
 train_losses = []
+
+# Pesos del MLP
+W1 = np.random.rand(2 * embedding_dim, hidden_dim1) * 0.01
+b1 = np.zeros((1, hidden_dim1))
+W2 = np.random.rand(hidden_dim1, hidden_dim2) * 0.01
+b2 = np.zeros((1, hidden_dim2))
+W3 = np.random.rand(hidden_dim2, output_dim) * 0.01
+b3 = np.zeros((1, output_dim))
+
+
 
 def relu(x):
     return np.maximum(0, x)
@@ -116,22 +127,32 @@ def train():
     moviesGenres  = movies['genres'].str.get_dummies(sep='|')
     userRanking = ds.readRankings()
 
-    for user in userRanking:
-        indexsMovies = user[user[:] > 0].index
+    userPreferences = {}
+
+    for user_id, user_ratings in userRanking.iterrows():
+        # Obtenir les pel·lícules valorades positivament
+        rated_movies = user_ratings[user_ratings > 0]
+
+        # Seleccionar els gèneres corresponents a les pel·lícules valorades
+        genres_of_rated_movies = moviesGenres.loc[rated_movies.index]
+
+        # Calcula la suma ponderada de les valoracions per gènere
+        user_embedding = genres_of_rated_movies.T.dot(rated_movies)
+
+        # Guarda l'embedding de l'usuari
+        userPreferences[user_id] = user_embedding
+
+    # Convertir a DataFrame per visualitzar
+    userPreferencesDF = pd.DataFrame(userPreferences).T
+    print(userPreferencesDF)
 
     np.random.seed(42)
 
-    # Embeddings ajustables //TODO: ARREGLAR AIXO
-    user_embeddings = #np.random.rand(num_users, embedding_dim) * 0.01
-    movie_embeddings = np.random.rand(len(movies), embedding_dim) * 0.01
+    input()
 
-    # Pesos del MLP
-    W1 = np.random.rand(2 * embedding_dim, hidden_dim1) * 0.01
-    b1 = np.zeros((1, hidden_dim1))
-    W2 = np.random.rand(hidden_dim1, hidden_dim2) * 0.01
-    b2 = np.zeros((1, hidden_dim2))
-    W3 = np.random.rand(hidden_dim2, output_dim) * 0.01
-    b3 = np.zeros((1, output_dim))
+    # Embeddings ajustables //TODO: ARREGLAR AIXO
+    user_embeddings = userPreferences
+    movie_embeddings = np.random.rand(len(movies), embedding_dim) * 0.01
 
     user_indices = np.random.randint(0, 100, 1000)  # 1000 mostres aleatòries d'usuaris
     movie_indices = np.random.randint(0, 100, 1000)  # 1000 mostres aleatòries de pel·lícules
@@ -173,5 +194,6 @@ def setupEnvironment():
     pivotRatingTest = test_data.pivot_table(index='userId', columns='movieId', values='rating', fill_value=0)
     pivotRatingTrain  = test_data.pivot_table(index='userId', columns='movieId', values='rating', fill_value=0)
 
+train()
 
 

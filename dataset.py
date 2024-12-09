@@ -11,7 +11,7 @@ class Movie:
 
 def readRankings() -> DataFrame:
     dataset  = pd.read_csv("datasets/ml-latest-small/ratings.csv")
-    dataset  = dataset.sort_values("timestamp", ascending=True, inplace=True)
+    dataset.sort_values("timestamp", ascending=True, inplace=True)
     print(dataset["userId"].max())
     pivotRating = dataset.pivot_table(index='userId', columns='movieId', values='rating', fill_value=0)
     print(pivotRating.head())
