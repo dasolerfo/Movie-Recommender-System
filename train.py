@@ -14,18 +14,17 @@ output_dim = 1
 user_embeddings = []
 movie_embeddings = []
 
-num_epochs = 100
+num_epochs = 2
 learning_rate = 0.01
 train_losses = []
 
 # Pesos del MLP
-W1 = np.random.rand(2 * embedding_dim, hidden_dim1) * 0.01
+W1 = np.random.rand(2 * embedding_dim, hidden_dim1) * 0.2
 b1 = np.zeros((1, hidden_dim1))
-W2 = np.random.rand(hidden_dim1, hidden_dim2) * 0.01
+W2 = np.random.rand(hidden_dim1, hidden_dim2) * 0.2
 b2 = np.zeros((1, hidden_dim2))
-W3 = np.random.rand(hidden_dim2, output_dim) * 0.01
+W3 = np.random.rand(hidden_dim2, output_dim) * 0.2
 b3 = np.zeros((1, output_dim))
-
 
 
 def relu(x):
@@ -86,8 +85,6 @@ def adam_update(param, grad, config, lr, beta1=0.9, beta2=0.999, epsilon=1e-8, t
     m_hat = config["m"] / (1 - beta1 ** t)
     v_hat = config["v"] / (1 - beta2 ** t)
 
-    #m_hat = m_hat.flatten()
-    #v_hat = v_hat.flatten()
 
     param -= lr * m_hat / (np.sqrt(v_hat) + epsilon)
     return param
@@ -146,17 +143,14 @@ def train():
     moviesGenres = ds.alignGenresWithRatings(userRanking, moviesGenres)
 
     for user_id, user_ratings in userRanking.iterrows():
-        # Obtenir les pel·lícules valorades positivament
         rated_movies = user_ratings[user_ratings > 0]
 
-        # Seleccionar els gèneres corresponents a les pel·lícules valorades
         genres_of_rated_movies = moviesGenres.loc[rated_movies.index]
 
-        # Calcula la suma ponderada de les valoracions per gènere
         user_embedding = genres_of_rated_movies.T.dot(rated_movies)
         if user_embedding.max() > 0:  # Evita dividir per zero
             user_embedding = user_embedding / user_embedding.max()
-        user_embedding *= 0.1
+        user_embedding *= 0.01
 
         userPreferences[user_id] = user_embedding.to_numpy()
 
@@ -174,12 +168,14 @@ def train():
 
     user_indices =  range(610)
     ratings = ds.readRatings()
+    ratings["rating"] = ratings["rating"] / 5
 
     for epoch in range(num_epochs):
         epoch_loss = 0
+        print("Iteracio numero: " + epoch.__str__())
 
         for i in range(len(ratings)):
-            print(i)
+
             user_idx = ratings.iloc[i]['userId']
             movie_idx = movies[movies['movieId'] == ratings.iloc[i]['movieId']].index[0]
             rating = ratings.iloc[i]['rating']
@@ -191,6 +187,7 @@ def train():
             x, z1, a1, z2, a2, z3, y_pred = forward(user_emb, movie_emb)
 
             # Pèrdua
+            print("Rating: ", rating, "  Predicció: ", y_pred)
             loss = mse_loss(rating, y_pred)
             epoch_loss += loss
 
