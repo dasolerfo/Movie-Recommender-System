@@ -27,6 +27,7 @@ W3 = np.random.rand(hidden_dim2, output_dim) * 0.2
 b3 = np.zeros((1, output_dim))
 
 
+
 def relu(x):
     return np.maximum(0, x)
 
