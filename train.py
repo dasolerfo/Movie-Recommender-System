@@ -6,8 +6,8 @@ import random
 # 1. Configuració de dimensions
 num_genres = 10
 embedding_dim = 20
-hidden_dim1 = 16
-hidden_dim2 = 8
+hidden_dim1 = 20
+hidden_dim2 = 10
 output_dim = 1
 
 
@@ -74,19 +74,27 @@ adam_params = {
 
 # Funció per aplicar Adam
 def adam_update(param, grad, config, lr, beta1=0.9, beta2=0.999, epsilon=1e-8, t=1):
+    # Comprovar si 'm' i 'v' estan inicialitzats; si no, inicialitzar-los amb zeros
+    if "m" not in config:
+        config["m"] = np.zeros_like(grad)
+    if "v" not in config:
+        config["v"] = np.zeros_like(grad)
+
     config["m"] = beta1 * config["m"] + (1 - beta1) * grad
     config["v"] = beta2 * config["v"] + (1 - beta2) * (grad ** 2)
+
     m_hat = config["m"] / (1 - beta1 ** t)
     v_hat = config["v"] / (1 - beta2 ** t)
+
     param -= lr * m_hat / (np.sqrt(v_hat) + epsilon)
     return param
 
 
 # Backward pass amb Adam
 def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr=0.01, t=1):
-    global W1, b1, W2, b2, W3, b3, user_embeddings, movie_embeddings, adam_params
+    global W1, b1, W2, b2, W3, b3, adam_params, user_embeddings, movie_embeddings
 
-    m = y_true.shape[0]
+    m = 1 #len(y_true)
 
     # Gradients de la pèrdua
     dz3 = (y_pred - y_true) * sigmoid_derivative(z3)
@@ -100,7 +108,7 @@ def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr
 
     da1 = np.dot(dz2, W2.T)
     dz1 = da1 * relu_derivative(z1)
-    dW1 = np.dot(x.T, dz1) / m
+    dW1 = np.dot(x.reshape(1, -1).T, dz1) / m
     db1 = np.sum(dz1, axis=0, keepdims=True) / m
 
     # Gradients per als embeddings
@@ -116,33 +124,27 @@ def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr
     W1 = adam_update(W1, dW1, adam_params["W1"], lr, t=t)
     b1 = adam_update(b1, db1, adam_params["b1"], lr, t=t)
 
-    user_embeddings[user_idx] = adam_update(
-        user_embeddings[user_idx], user_grad, adam_params["user_embeddings"], lr, t=t
-    )
+    #user_embeddings[user_idx] = adam_update(
+    #    user_embeddings[user_idx], user_grad, adam_params["user_embeddings"], lr, t=t
+    #)
     movie_embeddings[movie_idx] = adam_update(
         movie_embeddings[movie_idx], movie_grad, adam_params["movie_embeddings"], lr, t=t
     )
 
 
 def train():
+    global user_embeddings, movie_embeddings
     movies = ds.readMovies()
-
-    moviesGenres  = movies['genres'].str.get_dummies(sep='|')
     userRanking = ds.readRankings()
 
     userPreferences = {}
 
     moviesGenres = movies.set_index('movieId')['genres'].str.get_dummies(sep='|')
     moviesGenres = ds.alignGenresWithRatings(userRanking, moviesGenres)
-    #moviesGenres = ds.generateGenresFromRatings(userRanking, movies)
-
 
     for user_id, user_ratings in userRanking.iterrows():
         # Obtenir les pel·lícules valorades positivament
         rated_movies = user_ratings[user_ratings > 0]
-
-        not_found = rated_movies.index[~rated_movies.index.isin(moviesGenres.index)]
-        print("Pel·lícules no trobades:", not_found)
 
         # Seleccionar els gèneres corresponents a les pel·lícules valorades
         genres_of_rated_movies = moviesGenres.loc[rated_movies.index]
@@ -153,7 +155,7 @@ def train():
             user_embedding = user_embedding / user_embedding.max()
         user_embedding *= 0.1
 
-        userPreferences[user_id] = user_embedding
+        userPreferences[user_id] = user_embedding.to_numpy()
 
     # Convertir a DataFrame per visualitzar
     userPreferencesDF = pd.DataFrame(userPreferences).T
@@ -175,11 +177,11 @@ def train():
 
         for i in range(len(ratings)):
             user_idx = ratings.iloc[i]['userId'] - 1
-            movie_idx = movies[movies['movieId'] == ratings.iloc[i]['movieId']]
-            rating = ratings[i]['rating']
+            movie_idx = movies[movies['movieId'] == ratings.iloc[i]['movieId']].index[0]
+            rating = ratings.iloc[i]['rating']
 
-            user_emb = user_embeddings[user_idx]
-            movie_emb = movie_embeddings[movie_idx]
+            user_emb = user_embeddings[user_idx].reshape(1, -1)
+            movie_emb = movie_embeddings[movie_idx].reshape(1, -1)
 
             # Forward pass
             x, z1, a1, z2, a2, z3, y_pred = forward(user_emb, movie_emb)
