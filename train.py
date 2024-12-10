@@ -161,23 +161,22 @@ def train():
 
     np.random.seed(42)
 
-    input()
+    #input()
 
     # Embeddings ajustables //TODO: ARREGLAR AIXO
     user_embeddings = userPreferences
     movie_embeddings = np.random.rand(len(movies), embedding_dim) * 0.01
 
-    user_indices =  userRanking["userId"]
-    #movie_indices =
-    ratings = np.random.rand(1000, 1)  # Valoracions reals entre 0 i 1
+    user_indices =  range(610)
+    ratings = ds.readRatings()
 
     for epoch in range(num_epochs):
         epoch_loss = 0
 
-        for i in range(len(user_indices)):
-            user_idx = user_indices[i]
-            movie_idx = userRanking[]
-            rating = ratings[i]
+        for i in range(len(ratings)):
+            user_idx = ratings.iloc[i]['userId'] - 1
+            movie_idx = movies[movies['movieId'] == ratings.iloc[i]['movieId']]
+            rating = ratings[i]['rating']
 
             user_emb = user_embeddings[user_idx]
             movie_emb = movie_embeddings[movie_idx]

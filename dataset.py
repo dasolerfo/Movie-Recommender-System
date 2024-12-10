@@ -9,6 +9,11 @@ class Movie:
     name: String
     topics: list
 
+def readRatings() -> DataFrame:
+    dataset = pd.read_csv("datasets/ml-latest-small/ratings.csv")
+    dataset.sort_values("timestamp", ascending=True, inplace=True)
+    return dataset
+
 def readRankings() -> DataFrame:
     dataset  = pd.read_csv("datasets/ml-latest-small/ratings.csv")
     dataset.sort_values("timestamp", ascending=True, inplace=True)
