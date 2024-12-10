@@ -14,7 +14,7 @@ output_dim = 1
 user_embeddings = []
 movie_embeddings = []
 
-num_epochs = 500
+num_epochs = 100
 learning_rate = 0.01
 train_losses = []
 
@@ -75,9 +75,9 @@ adam_params = {
 # Funció per aplicar Adam
 def adam_update(param, grad, config, lr, beta1=0.9, beta2=0.999, epsilon=1e-8, t=1):
     # Comprovar si 'm' i 'v' estan inicialitzats; si no, inicialitzar-los amb zeros
-    if "m" not in config:
+    if len(config["m"]) == 0:
         config["m"] = np.zeros_like(grad)
-    if "v" not in config:
+    if len(config["v"]) == 0:
         config["v"] = np.zeros_like(grad)
 
     config["m"] = beta1 * config["m"] + (1 - beta1) * grad
@@ -85,6 +85,9 @@ def adam_update(param, grad, config, lr, beta1=0.9, beta2=0.999, epsilon=1e-8, t
 
     m_hat = config["m"] / (1 - beta1 ** t)
     v_hat = config["v"] / (1 - beta2 ** t)
+
+    #m_hat = m_hat.flatten()
+    #v_hat = v_hat.flatten()
 
     param -= lr * m_hat / (np.sqrt(v_hat) + epsilon)
     return param
@@ -128,7 +131,7 @@ def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr
     #    user_embeddings[user_idx], user_grad, adam_params["user_embeddings"], lr, t=t
     #)
     movie_embeddings[movie_idx] = adam_update(
-        movie_embeddings[movie_idx], movie_grad, adam_params["movie_embeddings"], lr, t=t
+        movie_embeddings[movie_idx].reshape(1, -1), movie_grad, adam_params["movie_embeddings"], lr, t=t
     )
 
 
@@ -176,7 +179,8 @@ def train():
         epoch_loss = 0
 
         for i in range(len(ratings)):
-            user_idx = ratings.iloc[i]['userId'] - 1
+            print(i)
+            user_idx = ratings.iloc[i]['userId']
             movie_idx = movies[movies['movieId'] == ratings.iloc[i]['movieId']].index[0]
             rating = ratings.iloc[i]['rating']
 
