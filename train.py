@@ -5,10 +5,14 @@ import random
 
 # 1. Configuració de dimensions
 num_genres = 10
-embedding_dim = 5
+embedding_dim = 20
 hidden_dim1 = 16
 hidden_dim2 = 8
 output_dim = 1
+
+
+user_embeddings = []
+movie_embeddings = []
 
 num_epochs = 500
 learning_rate = 0.01
@@ -121,7 +125,6 @@ def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr
 
 
 def train():
-
     movies = ds.readMovies()
 
     moviesGenres  = movies['genres'].str.get_dummies(sep='|')
@@ -129,17 +132,27 @@ def train():
 
     userPreferences = {}
 
+    moviesGenres = movies.set_index('movieId')['genres'].str.get_dummies(sep='|')
+    moviesGenres = ds.alignGenresWithRatings(userRanking, moviesGenres)
+    #moviesGenres = ds.generateGenresFromRatings(userRanking, movies)
+
+
     for user_id, user_ratings in userRanking.iterrows():
         # Obtenir les pel·lícules valorades positivament
         rated_movies = user_ratings[user_ratings > 0]
+
+        not_found = rated_movies.index[~rated_movies.index.isin(moviesGenres.index)]
+        print("Pel·lícules no trobades:", not_found)
 
         # Seleccionar els gèneres corresponents a les pel·lícules valorades
         genres_of_rated_movies = moviesGenres.loc[rated_movies.index]
 
         # Calcula la suma ponderada de les valoracions per gènere
         user_embedding = genres_of_rated_movies.T.dot(rated_movies)
+        if user_embedding.max() > 0:  # Evita dividir per zero
+            user_embedding = user_embedding / user_embedding.max()
+        user_embedding *= 0.1
 
-        # Guarda l'embedding de l'usuari
         userPreferences[user_id] = user_embedding
 
     # Convertir a DataFrame per visualitzar
@@ -154,8 +167,8 @@ def train():
     user_embeddings = userPreferences
     movie_embeddings = np.random.rand(len(movies), embedding_dim) * 0.01
 
-    user_indices = np.random.randint(0, 100, 1000)  # 1000 mostres aleatòries d'usuaris
-    movie_indices = np.random.randint(0, 100, 1000)  # 1000 mostres aleatòries de pel·lícules
+    user_indices =  userRanking["userId"]
+    #movie_indices =
     ratings = np.random.rand(1000, 1)  # Valoracions reals entre 0 i 1
 
     for epoch in range(num_epochs):
@@ -163,7 +176,7 @@ def train():
 
         for i in range(len(user_indices)):
             user_idx = user_indices[i]
-            movie_idx = movie_indices[i]
+            movie_idx = userRanking[]
             rating = ratings[i]
 
             user_emb = user_embeddings[user_idx]
