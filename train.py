@@ -15,7 +15,7 @@ user_embeddings = []
 movie_embeddings = []
 
 num_epochs = 2
-learning_rate = 0.01
+learning_rate = 0.001
 train_losses = []
 
 # Pesos del MLP
@@ -74,7 +74,6 @@ adam_params = {
 
 # Funció per aplicar Adam
 def adam_update(param, grad, config, lr, beta1=0.9, beta2=0.999, epsilon=1e-8, t=1):
-    # Comprovar si 'm' i 'v' estan inicialitzats; si no, inicialitzar-los amb zeros
     if len(config["m"]) == 0:
         config["m"] = np.zeros_like(grad)
     if len(config["v"]) == 0:
@@ -92,7 +91,7 @@ def adam_update(param, grad, config, lr, beta1=0.9, beta2=0.999, epsilon=1e-8, t
 
 
 # Backward pass amb Adam
-def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr=0.01, t=1):
+def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr=0.001, t=1):
     global W1, b1, W2, b2, W3, b3, adam_params, user_embeddings, movie_embeddings
 
     m = 1 #len(y_true)
