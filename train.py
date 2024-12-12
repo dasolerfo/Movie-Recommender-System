@@ -14,16 +14,16 @@ output_dim = 1
 user_embeddings = []
 movie_embeddings = []
 
-num_epochs = 2
+num_epochs = 50
 learning_rate = 0.01
 train_losses = []
 
 # Pesos del MLP
-W1 = np.random.rand(2 * embedding_dim, hidden_dim1) * 0.2
+W1 = np.random.rand(2 * embedding_dim, hidden_dim1) * 0.01
 b1 = np.zeros((1, hidden_dim1))
-W2 = np.random.rand(hidden_dim1, hidden_dim2) * 0.2
+W2 = np.random.rand(hidden_dim1, hidden_dim2) * 0.01
 b2 = np.zeros((1, hidden_dim2))
-W3 = np.random.rand(hidden_dim2, output_dim) * 0.2
+W3 = np.random.rand(hidden_dim2, output_dim) * 0.01
 b3 = np.zeros((1, output_dim))
 
 
@@ -33,6 +33,14 @@ def relu(x):
 
 def relu_derivative(x):
     return (x > 0).astype(float)
+
+
+def leaky_relu(x, alpha=0.01):
+    return np.where(x > 0, x, alpha * x)
+
+
+def leaky_relu_derivative(x, alpha=0.01):
+    return np.where(x > 0, 1, alpha)
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -50,9 +58,9 @@ def mse_loss(y_true, y_pred):
 def forward(user_emb, movie_emb):
     x = np.hstack((user_emb, movie_emb))
     z1 = np.dot(x, W1) + b1
-    a1 = relu(z1)
+    a1 = leaky_relu(z1)
     z2 = np.dot(a1, W2) + b2
-    a2 = relu(z2)
+    a2 = leaky_relu(z2)
     z3 = np.dot(a2, W3) + b3
     y_pred = sigmoid(z3)
     return x, z1, a1, z2, a2, z3, y_pred
@@ -103,12 +111,12 @@ def backward_adam(x, z1, a1, z2, a2, z3, y_pred, y_true, user_idx, movie_idx, lr
     db3 = np.sum(dz3, axis=0, keepdims=True) / m
 
     da2 = np.dot(dz3, W3.T)
-    dz2 = da2 * relu_derivative(z2)
+    dz2 = da2 * leaky_relu_derivative(z2)
     dW2 = np.dot(a1.T, dz2) / m
     db2 = np.sum(dz2, axis=0, keepdims=True) / m
 
     da1 = np.dot(dz2, W2.T)
-    dz1 = da1 * relu_derivative(z1)
+    dz1 = da1 * leaky_relu_derivative(z1)
     dW1 = np.dot(x.reshape(1, -1).T, dz1) / m
     db1 = np.sum(dz1, axis=0, keepdims=True) / m
 
